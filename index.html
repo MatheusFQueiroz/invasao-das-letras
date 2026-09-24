@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="dark">
+<meta name="theme-color" content="#0B0F2E">
+<title>Invasão das Letras</title>
+<meta name="description" content="Jogo de digitação para crianças: destrua os meteoros digitando as letras e palavras, aprendendo a posição certa dos dedos no teclado.">
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<link rel="preload" href="fontes/fredoka-700.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="fontes/nunito-600.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="estilo.css">
+</head>
+<body>
+<div class="espaco" aria-hidden="true"><canvas id="fundo"></canvas></div>
+
+<header class="topo">
+  <button class="marca" id="btInicio" aria-label="Ir para o mapa das missões"><span class="logo" aria-hidden="true"></span><span><b>Invasão das Letras</b><small>Jogo de digitação</small></span></button>
+  <div class="topo-meio" id="topoMeio">
+    <div class="chip" id="chipMissao"></div>
+    <div class="passos" id="passos" aria-hidden="true"></div>
+    <div class="restam" id="restam" aria-live="polite"></div>
+  </div>
+  <button class="bt-topo" id="btPausa" aria-label="Pausar"><span class="ic ic-pausa" aria-hidden="true"></span><span>Pausar</span></button>
+  <button class="bt-topo" id="btMapa"><span class="ic ic-mapa" aria-hidden="true"></span><span>Missões</span></button>
+  <button class="bt-topo" id="btAjustes" aria-label="Ajustes"><span class="ic ic-ajustes" aria-hidden="true"></span></button>
+</header>
+
+<main>
+  <section class="tela" id="mapa"></section>
+  <section class="tela oculto" id="ajustes"></section>
+  <section class="oculto" id="jogo">
+    <div class="palco"><canvas id="cv"></canvas><div class="aviso-dedo" id="avisoDedo" aria-live="polite"></div></div>
+    <div class="teclado-caixa">
+      <div class="teclado" id="teclado"></div>
+      <div class="legenda" id="legenda"></div>
+    </div>
+  </section>
+</main>
+
+<div class="veu oculto" id="janela" role="dialog" aria-modal="true" aria-labelledby="janelaTit"></div>
+
+<script src="jogo.js"></script>
+</body>
+</html>
