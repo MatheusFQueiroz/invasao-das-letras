@@ -5,16 +5,18 @@
    Dedos e teclas
    0 mindinho E · 1 anelar E · 2 médio E · 3 indicador E · 4 indicador D · 5 médio D · 6 anelar D · 7 mindinho D
    ====================================================================== */
-var DEDO_DE={q:0,a:0,z:0, w:1,s:1,x:1, e:2,d:2,c:2, r:3,f:3,v:3,t:3,g:3,b:3, y:4,h:4,n:4,u:4,j:4,m:4, i:5,k:5, o:6,l:6, p:7};
-var NOME_DEDO=['mindinho','anelar','médio','indicador','indicador','médio','anelar','mindinho'];
-var COR_DEDO=['#FF6B8A','#FFB347','#FFE24D','#6BE585','#5CD6FF','#7C9CFF','#C58BFF','#FF8AD8'];
+var DEDO_DE={' ':8, q:0,a:0,z:0, w:1,s:1,x:1, e:2,d:2,c:2, r:3,f:3,v:3,t:3,g:3,b:3, y:4,h:4,n:4,u:4,j:4,m:4, i:5,k:5, o:6,l:6, p:7};
+var NOME_DEDO=['mindinho','anelar','médio','indicador','indicador','médio','anelar','mindinho','polegar'];
+var COR_DEDO=['#FF6B8A','#FFB347','#FFE24D','#6BE585','#5CD6FF','#7C9CFF','#C58BFF','#FF8AD8','#C9D1FF'];
 var CASA={a:0,s:1,d:2,f:3,j:4,k:5,l:6};   // posição de descanso (o mindinho direito descansa no ç ou ;)
 var LINHAS=['qwertyuiop','asdfghjkl','zxcvbnm'];
-function mao(d){ return d<4?'esquerda':'direita'; }
+function mao(d){ return d===8?'que você preferir':d<4?'esquerda':'direita'; }
+function nomeTecla(c){ return c===' '?'ESPAÇO':c.toUpperCase(); }
 function dedoHtml(d){ return '<span class="dedo"><i style="background:'+COR_DEDO[d]+'"></i>'+NOME_DEDO[d]+' da mão '+mao(d)+'</span>'; }
 function casaDoDedo(d){ for(var k in CASA) if(CASA[k]===d) return k.toUpperCase(); return d===7?'Ç (ou ;)':''; }
 function dicaTecla(c){
   var d=DEDO_DE[c],up=c.toUpperCase();
+  if(c===' ') return 'A barra de <b>espaço</b> é do '+dedoHtml(8)+'. Os polegares ficam descansando em cima dela, e qualquer um dos dois pode apertar.';
   if(CASA[c]!==undefined) return 'A letra <b>'+up+'</b> é a casa do '+dedoHtml(d)+'. Ele fica descansando em cima dela.';
   return 'A letra <b>'+up+'</b> é do '+dedoHtml(d)+'. Ele sai da casa <b>'+casaDoDedo(d)+'</b>, aperta o '+up+' e volta.';
 }
@@ -33,7 +35,8 @@ function maos(destaque,opts){
     var s='';
     var palma='<rect x="'+(ox+22)+'" y="60" width="86" height="80" rx="26" fill="#4A54A0" stroke="#0B0F2E" stroke-width="2.5"/>';
     // polegar
-    var pol='<rect x="'+(esq?ox+96:ox+2)+'" y="86" width="22" height="52" rx="11" fill="#4A54A0" stroke="#0B0F2E" stroke-width="2.5" transform="rotate('+(esq?-30:30)+' '+(esq?ox+107:ox+13)+' 138)"/>';
+    var corPol=(todos||on[8])?COR_DEDO[8]:'#4A54A0';
+    var pol='<rect x="'+(esq?ox+96:ox+2)+'" y="86" width="22" height="52" rx="11" fill="'+corPol+'" stroke="#0B0F2E" stroke-width="2.5" transform="rotate('+(esq?-30:30)+' '+(esq?ox+107:ox+13)+' 138)"/>';
     var ordem=esq?[0,1,2,3]:[4,5,6,7]; if(!esq) ordem=[4,5,6,7];
     var xs=esq?[ox+24,ox+45,ox+66,ox+87]:[ox+24,ox+45,ox+66,ox+87];
     var alturas=esq?[52,66,74,64]:[64,74,66,52];
@@ -50,6 +53,9 @@ function maos(destaque,opts){
    ====================================================================== */
 var PAL_CURTAS=['sol','mar','pai','rio','lua','boi','mel','dia','ovo','uva','sal','tia','rei','ave','asa','pé','já','ilha','fada','dado'];
 var PAL_MEDIAS=['bola','gato','pato','casa','mala','sapo','dedo','vaca','faca','lobo','rato','suco','pipa','sino','copo','luva','mesa','fogo','nuvem','livro','peixe','flor'];
+var FRASES_1=['o sol brilha','a bola rola','o pato nada','o rio corre','a vaca come','eu amo ler','meu gato dorme','vamos brincar'];
+var FRASES_2=['boa noite lua','a nave voa longe','o sapo pula alto','eu gosto de ler','a estrela brilha','o foguete sobe','a lua sorri','meu amigo chegou'];
+var FRASES_3=['a escola e legal','o planeta gira devagar','eu sei digitar','o meteoro caiu no mar','a girafa come folhas','vamos salvar o planeta'];
 var PAL_GRANDES=['escola','janela','caneta','boneca','cavalo','girafa','tomate','banana','sapato','camelo','planeta','foguete','estrela','teclado','meteoro','amigo'];
 var MISSOES=[
  {nome:'A casa da mão esquerda',cor:'#FF6B8A',desc:'Os quatro dedos da mão esquerda descansam em A, S, D e F.',teclas:'asdf',dedos:[0,1,2,3],
@@ -81,7 +87,10 @@ var MISSOES=[
   fases:[{pool:PAL_MEDIAS,total:8,queda:22,intervalo:5},{pool:PAL_MEDIAS,total:10,queda:20,intervalo:4.6},{pool:PAL_MEDIAS,total:12,queda:18,intervalo:4}]},
  {nome:'Palavras grandes',cor:'#FFB347',desc:'Palavras de seis e sete letras. A missão final!',teclas:'',dedos:[],palavras:true,
   dicas:['Palavras grandes são só palavras pequenas coladas: <b>fo-gue-te</b>. Digite pedaço por pedaço.','Respire antes de cada meteoro. Um por vez.','Você chegou até aqui usando os dez dedos. Isso é o mais importante!'],
-  fases:[{pool:PAL_GRANDES,total:8,queda:26,intervalo:6},{pool:PAL_GRANDES,total:10,queda:23,intervalo:5.4},{pool:PAL_CURTAS.concat(PAL_MEDIAS,PAL_GRANDES),total:14,queda:19,intervalo:4}]}
+  fases:[{pool:PAL_GRANDES,total:8,queda:26,intervalo:6},{pool:PAL_GRANDES,total:10,queda:23,intervalo:5.4},{pool:PAL_CURTAS.concat(PAL_MEDIAS,PAL_GRANDES),total:14,queda:19,intervalo:4}]},
+ {nome:'Frases bônus',cor:'#FFD166',desc:'Frases inteiras, com a barra de espaço entre as palavras. O desafio final!',teclas:'',dedos:[8],palavras:true,frases:true,
+  dicas:['Agora caem <b>frases</b>. Entre uma palavra e outra você aperta a <b>barra de espaço</b> com o polegar.','Os polegares ficam sempre descansando em cima da barra de espaço. Qualquer um dos dois pode apertar.','Leia a frase inteira primeiro. Depois digite palavra por palavra, com o espaço no meio. Sem pressa: a frase mirada cai bem devagar.'],
+  fases:[{pool:FRASES_1,total:6,queda:34,intervalo:9},{pool:FRASES_2,total:8,queda:30,intervalo:8},{pool:FRASES_1.concat(FRASES_2,FRASES_3),total:10,queda:27,intervalo:7}]}
 ];
 var FASES=[]; MISSOES.forEach(function(m,mi){ m.fases.forEach(function(f,fi){ f.m=mi; f.i=fi; FASES.push(f); }); });
 
@@ -222,9 +231,11 @@ var TK={};
     });
     tec.appendChild(d);
   });
+  var le=el('div','linha'); var ke=el('button','tecla espaco','espaço'); ke.style.setProperty('--k',COR_DEDO[8]); ke.setAttribute('aria-label','barra de espaço'); ke.tabIndex=-1;
+  ke.onmousedown=function(ev){ ev.preventDefault(); tecla(' '); }; TK[' ']=ke; le.appendChild(ke); tec.appendChild(le);
   var lg=$('legenda');
   lg.innerHTML='<span><b style="background:'+COR_DEDO[0]+'"></b>mindinho</span><span><b style="background:'+COR_DEDO[1]+'"></b>anelar</span><span><b style="background:'+COR_DEDO[2]+'"></b>médio</span><span><b style="background:'+COR_DEDO[3]+'"></b>indicador</span><span class="sep"></span><span>mão esquerda</span>'+
-    '<span class="sep"></span><span>mão direita</span><span class="sep"></span><span><b style="background:'+COR_DEDO[4]+'"></b>indicador</span><span><b style="background:'+COR_DEDO[5]+'"></b>médio</span><span><b style="background:'+COR_DEDO[6]+'"></b>anelar</span><span><b style="background:'+COR_DEDO[7]+'"></b>mindinho</span>';
+    '<span class="sep"></span><span><b style="background:'+COR_DEDO[8]+'"></b>polegar (espaço)</span><span class="sep"></span><span>mão direita</span><span class="sep"></span><span><b style="background:'+COR_DEDO[4]+'"></b>indicador</span><span><b style="background:'+COR_DEDO[5]+'"></b>médio</span><span><b style="background:'+COR_DEDO[6]+'"></b>anelar</span><span><b style="background:'+COR_DEDO[7]+'"></b>mindinho</span>';
 })();
 function marcaProx(){
   var c=null;
@@ -234,7 +245,7 @@ function marcaProx(){
   for(var k in TK) TK[k].classList.remove('prox');
   if(c&&TK[c]) TK[c].classList.add('prox');
   var av=$('avisoDedo');
-  if(c&&DEDO_DE[c]!==undefined){ var d=DEDO_DE[c]; av.innerHTML='<span class="bola" style="background:'+COR_DEDO[d]+'"></span><span><b>'+c.toUpperCase()+'</b> · '+NOME_DEDO[d]+' da mão '+mao(d)+'</span>'; av.classList.add('ver'); }
+  if(c&&DEDO_DE[c]!==undefined){ var d=DEDO_DE[c]; av.innerHTML='<span class="bola" style="background:'+COR_DEDO[d]+'"></span><span><b>'+nomeTecla(c)+'</b> · '+NOME_DEDO[d]+(d===8?'':' da mão '+mao(d))+'</span>'; av.classList.add('ver'); }
   else av.classList.remove('ver');
 }
 function piscaTecla(c,cls){ var k=TK[c]; if(!k) return; k.classList.remove(cls); void k.offsetWidth; k.classList.add(cls); setTimeout(function(){ k.classList.remove(cls); },300); }
@@ -293,8 +304,10 @@ function lanca(){
   var usadas={}; G.met.forEach(function(m){ if(!m.morto) usadas[m.pal[0]]=1; });
   var ops=pool.filter(function(p){ return !usadas[p[0]]&&p!==G.ultima; }); if(!ops.length) ops=pool;
   var pal=ops[Math.floor(Math.random()*ops.length)]; G.ultima=pal;
-  var raio=Math.max(30,16+pal.length*10);
-  var x=raio+30+Math.random()*(W-2*raio-60);
+  var frase=pal.indexOf(' ')>=0;
+  var raio=frase?46:Math.max(30,16+pal.length*10);
+  var marg=Math.max(raio,pal.length*8)+30;
+  var x=marg+Math.random()*Math.max(1,W-2*marg);
   G.met.push({pal:pal,dig:0,x:x,y:-raio,r:raio,vel:(chao+raio)/(F.queda*fator()),morto:false,giro:Math.random()*6.28,vgiro:(Math.random()-.5)*.8,tom:Math.random()});
   G.lancados++;
 }
@@ -319,7 +332,7 @@ function explode(m){
 function pousou(m){
   m.morto=true; if(G.alvo===m) G.alvo=null; G.caidos++; G.rodando=false; tom([196,147],'triangle');
   G.ondas.push({x:m.x,y:chao,r:m.r,v:.6,poeira:true});
-  var c=m.pal[0],d=DEDO_DE[c],F=FASES[G.fase],M=MISSOES[F.m];
+  var c=m.dig<m.pal.length?m.pal[m.dig]:m.pal[0],d=DEDO_DE[c],F=FASES[G.fase],M=MISSOES[F.m];
   if(G.caidos>=3){
     janela('<div class="rotulo">Vamos parar um pouquinho</div><h2 id="janelaTit">Três meteoros pousaram</h2>'+
       '<p>Tudo bem, isso acontece. Antes de continuar, vamos <b>arrumar as mãos</b> com calma. Faça cada passo:</p>'+
@@ -343,7 +356,7 @@ function fimFase(){
   G.rodando=false; var F=FASES[G.fase],M=MISSOES[F.m],novo=!est.feitas[G.fase]; est.feitas[G.fase]=1; salva(); tom([523,659,784,1046]);
   var ult=G.fase===FASES.length-1,fimMissao=F.i===M.fases.length-1;
   var tit=fimMissao?'Missão completa!':'Fase completa!';
-  var sub=fimMissao?(ult?'Você terminou todas as missões usando os dez dedos. Isso é o que importa!':'A próxima missão ensina um pedaço novo do teclado.'):'Mais uma estrela na sua constelação.';
+  var sub=fimMissao?(ult?'Você terminou todas as missões, até as frases bônus, usando os dez dedos. Isso é o que importa!':'A próxima missão ensina um pedaço novo do teclado.'):'Mais uma estrela na sua constelação.';
   var msgCaidos=G.caidos===0?'Nenhum meteoro pousou nesta fase!':G.caidos===1?'Um meteoro pousou, e você ajeitou as mãos e seguiu em frente.':'Alguns meteoros pousaram e você continuou. Isso é treinar!';
   janela('<div class="rotulo">Missão '+(F.m+1)+' · fase '+(F.i+1)+'</div><div class="medalha">'+ESTRELA+'</div><h2 id="janelaTit">'+tit+'</h2><p>'+sub+'</p><p>'+msgCaidos+'</p>'+
     '<div class="linha-bts"><button class="bt-principal">'+(ult?'Ver as missões':'Continuar')+'</button>'+(ult?'':'<button class="bt-leve" id="btMapaJ">Missões</button>')+'</div><div class="atalho">Aperte <kbd>Enter</kbd></div>',
@@ -407,15 +420,17 @@ function desenha(){
     cx.fillStyle='rgba(0,0,0,.22)'; [[.4,-.3,.22],[-.15,.45,.16],[.45,.35,.12]].forEach(function(cr){ var a=m.giro; var px=m.x+(cr[0]*Math.cos(a)-cr[1]*Math.sin(a))*m.r,py=m.y+(cr[0]*Math.sin(a)+cr[1]*Math.cos(a))*m.r; cx.beginPath(); cx.arc(px,py,m.r*cr[2],0,6.28); cx.fill(); });
     if(mir){ cx.strokeStyle='#FFD166'; cx.lineWidth=4; cx.setLineDash([8,6]); cx.lineDashOffset=-G.t*40; cx.beginPath(); cx.arc(m.x,m.y,m.r+8,0,6.28); cx.stroke(); cx.setLineDash([]); }
     // etiqueta
-    var fs=m.pal.length>1?Math.min(28,Math.max(20,m.r*.7)):Math.max(28,m.r*.95);
+    var fs=m.pal.length>1?Math.min(28,Math.max(20,m.r*.7)):Math.max(28,m.r*.95); if(m.pal.length>9) fs=Math.min(fs,24);
     cx.font='700 '+fs+'px Fredoka, Nunito, sans-serif'; cx.textBaseline='middle'; cx.textAlign='left';
     var larg=cx.measureText(m.pal.toUpperCase()).width,x0=m.x-larg/2;
     cx.fillStyle='rgba(11,15,46,.55)'; roundRect(x0-10,m.y-fs*.7,larg+20,fs*1.4,10); cx.fill();
     var feito=m.pal.slice(0,m.dig).toUpperCase(),falta=m.pal.slice(m.dig).toUpperCase();
+    // o espaço que falta aparece como um tracinho, para a criança ver que precisa apertar a barra
+    if(falta.charAt(0)===' '){ falta='_'+falta.slice(1); }
     cx.fillStyle='#FFD166'; cx.fillText(feito,x0,m.y+1);
     var wf=cx.measureText(feito).width;
     // próxima letra na cor do dedo
-    var prox=falta.charAt(0),resto=falta.slice(1),d=DEDO_DE[prox.toLowerCase()];
+    var prox=falta.charAt(0),resto=falta.slice(1),d=DEDO_DE[prox==='_'?' ':prox.toLowerCase()];
     cx.fillStyle=d!==undefined?COR_DEDO[d]:'#fff'; cx.fillText(prox,x0+wf,m.y+1);
     cx.fillStyle='#fff'; cx.fillText(resto,x0+wf+cx.measureText(prox).width,m.y+1);
   });
@@ -446,7 +461,7 @@ document.addEventListener('keydown',function(e){
   if(e.key==='Enter'&&janelaAcao){ e.preventDefault(); janelaAcao(); return; }
   if(e.key==='Escape'){ if(G.pausado&&janelaAcao){ janelaAcao(); } else if(G.rodando) pausa(); return; }
   if(telaAtual!=='jogo'||janelaAcao) return;
-  if(e.key&&e.key.length===1){ var c=e.key.toLowerCase(); if(c>='a'&&c<='z'){ e.preventDefault(); tecla(c); } else if(c===' '||c==='ç') e.preventDefault(); }
+  if(e.key&&e.key.length===1){ var c=e.key.toLowerCase(); if(c>='a'&&c<='z'){ e.preventDefault(); tecla(c); } else if(c===' '){ e.preventDefault(); tecla(' '); } else if(c==='ç') e.preventDefault(); }
   if(e.key==='Backspace') e.preventDefault();
 });
 window.addEventListener('blur',function(){ if(G.rodando&&!G.pausado) pausa(); });
