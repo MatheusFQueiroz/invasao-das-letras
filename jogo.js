@@ -51,7 +51,7 @@ function maos(destaque,opts){
    Missões e fases
    pool = letras ou palavras · total = meteoros · queda = segundos até o chão · intervalo = segundos entre meteoros
    ====================================================================== */
-var PAL_CURTAS=['sol','mar','pai','rio','lua','boi','mel','dia','ovo','uva','sal','tia','rei','ave','asa','pé','já','ilha','fada','dado'];
+var PAL_CURTAS=['sol','mar','pai','rio','lua','boi','mel','dia','ovo','uva','sal','tia','rei','ave','asa','oi','tio','ilha','fada','dado'];
 var PAL_MEDIAS=['bola','gato','pato','casa','mala','sapo','dedo','vaca','faca','lobo','rato','suco','pipa','sino','copo','luva','mesa','fogo','nuvem','livro','peixe','flor'];
 var FRASES_1=['o sol brilha','a bola rola','o pato nada','o rio corre','a vaca come','eu amo ler','meu gato dorme','vamos brincar'];
 var FRASES_2=['boa noite lua','a nave voa longe','o sapo pula alto','eu gosto de ler','a estrela brilha','o foguete sobe','a lua sorri','meu amigo chegou'];
@@ -461,7 +461,7 @@ document.addEventListener('keydown',function(e){
   if(e.key==='Enter'&&janelaAcao){ e.preventDefault(); janelaAcao(); return; }
   if(e.key==='Escape'){ if(G.pausado&&janelaAcao){ janelaAcao(); } else if(G.rodando) pausa(); return; }
   if(telaAtual!=='jogo'||janelaAcao) return;
-  if(e.key&&e.key.length===1){ var c=e.key.toLowerCase(); if(c>='a'&&c<='z'){ e.preventDefault(); tecla(c); } else if(c===' '){ e.preventDefault(); tecla(' '); } else if(c==='ç') e.preventDefault(); }
+  if(e.key&&e.key.length===1){ var c=e.key.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,''); /* se a criança esbarrar no acento, a letra ainda vale */ if(c>='a'&&c<='z'){ e.preventDefault(); tecla(c); } else if(c===' '){ e.preventDefault(); tecla(' '); } else if(c==='ç') e.preventDefault(); }
   if(e.key==='Backspace') e.preventDefault();
 });
 window.addEventListener('blur',function(){ if(G.rodando&&!G.pausado) pausa(); });
