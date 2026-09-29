@@ -226,21 +226,20 @@ var TK={};
     var d=el('div','linha');
     l.split('').forEach(function(c){
       var k=el('button','tecla'+((c==='f'||c==='j')?' casa':''),c); k.style.setProperty('--k',COR_DEDO[DEDO_DE[c]]);
-      k.setAttribute('aria-label','tecla '+c.toUpperCase()); k.tabIndex=-1;
-      k.onmousedown=function(ev){ ev.preventDefault(); tecla(c); }; TK[c]=k; d.appendChild(k);
+      k.setAttribute('aria-label','tecla '+c.toUpperCase()); k.tabIndex=-1; k.disabled=true; TK[c]=k; d.appendChild(k);
     });
     tec.appendChild(d);
   });
-  var le=el('div','linha'); var ke=el('button','tecla espaco','espaço'); ke.style.setProperty('--k',COR_DEDO[8]); ke.setAttribute('aria-label','barra de espaço'); ke.tabIndex=-1;
-  ke.onmousedown=function(ev){ ev.preventDefault(); tecla(' '); }; TK[' ']=ke; le.appendChild(ke); tec.appendChild(le);
+  var le=el('div','linha'); var ke=el('button','tecla espaco','espaço'); ke.style.setProperty('--k',COR_DEDO[8]); ke.setAttribute('aria-label','barra de espaço'); ke.tabIndex=-1; ke.disabled=true; TK[' ']=ke; le.appendChild(ke); tec.appendChild(le);
   var lg=$('legenda');
   lg.innerHTML='<span><b style="background:'+COR_DEDO[0]+'"></b>mindinho</span><span><b style="background:'+COR_DEDO[1]+'"></b>anelar</span><span><b style="background:'+COR_DEDO[2]+'"></b>médio</span><span><b style="background:'+COR_DEDO[3]+'"></b>indicador</span><span class="sep"></span><span>mão esquerda</span>'+
     '<span class="sep"></span><span><b style="background:'+COR_DEDO[8]+'"></b>polegar (espaço)</span><span class="sep"></span><span>mão direita</span><span class="sep"></span><span><b style="background:'+COR_DEDO[4]+'"></b>indicador</span><span><b style="background:'+COR_DEDO[5]+'"></b>médio</span><span><b style="background:'+COR_DEDO[6]+'"></b>anelar</span><span><b style="background:'+COR_DEDO[7]+'"></b>mindinho</span>';
 })();
+function visivel(m){ return m.y-m.r>=0; }   // o meteoro inteiro já entrou na tela
 function marcaProx(){
   var c=null;
   if(G.alvo) c=G.alvo.pal[G.alvo.dig];
-  else { var baixo=null; G.met.forEach(function(m){ if(!m.morto&&(!baixo||m.y>baixo.y)) baixo=m; }); if(baixo) c=baixo.pal[0]; }
+  else { var baixo=null; G.met.forEach(function(m){ if(!m.morto&&visivel(m)&&(!baixo||m.y>baixo.y)) baixo=m; }); if(baixo) c=baixo.pal[0]; }
   if(c===G.proxMarcada) return; G.proxMarcada=c;
   for(var k in TK) TK[k].classList.remove('prox');
   if(c&&TK[c]) TK[c].classList.add('prox');
@@ -289,7 +288,7 @@ function preparaFase(i){
   $('btMapaJ').onclick=mapa; $('janela').querySelector('.cartao').style.setProperty('--cor',M.cor);
 }
 function comecaFase(){
-  fecha(); tam(); G.met=[]; G.alvo=null; G.lancados=0; G.destruidos=0; G.caidos=0; G.t=0; G.proxLanc=.8; G.part=[]; G.lasers=[]; G.ondas=[]; G.proxMarcada=null;
+  fecha(); tam(); G.met=[]; G.alvo=null; G.lancados=0; G.destruidos=0; G.caidos=0; G.t=0; G.proxLanc=.3; G.part=[]; G.lasers=[]; G.ondas=[]; G.proxMarcada=null;
   G.rodando=true; G.pausado=false; hud(); marcaProx();
 }
 function hud(){
@@ -298,7 +297,7 @@ function hud(){
   var ps=$('passos'); ps.innerHTML=''; M.fases.forEach(function(f,fi){ var d=el('i'); if(est.feitas[FASES.indexOf(f)]) d.className='f'; if(fi===F.i) d.className='a'; ps.appendChild(d); });
   var falta=F.total-G.destruidos; $('restam').innerHTML='<span>Meteoros</span><b>'+falta+'</b><span class="barra"><i style="width:'+(G.destruidos/F.total*100)+'%"></i></span>';
 }
-function fator(){ return est.lento?1.45:1; }
+function fator(){ return est.lento?1.25:.85; }
 function lanca(){
   var F=FASES[G.fase],pool=typeof F.pool==='string'?F.pool.split(''):F.pool;
   var usadas={}; G.met.forEach(function(m){ if(!m.morto) usadas[m.pal[0]]=1; });
@@ -314,7 +313,7 @@ function lanca(){
 function tecla(c){
   if(!G.rodando||G.pausado) return;
   if(!G.alvo){
-    var cand=null; G.met.forEach(function(m){ if(!m.morto&&m.pal[0]===c&&(!cand||m.y>cand.y)) cand=m; });
+    var cand=null; G.met.forEach(function(m){ if(!m.morto&&visivel(m)&&m.pal[0]===c&&(!cand||m.y>cand.y)) cand=m; });
     if(!cand){ piscaTecla(c,'ops'); tom([220],'triangle'); return; }
     G.alvo=cand; G.alvo.dig=1; tiro(cand);
   } else {
