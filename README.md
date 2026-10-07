@@ -4,6 +4,23 @@ Jogo de **digitação** para crianças: meteoros com letras, palavras e frases c
 
 🎮 **Jogar:** https://invasao-das-letras.cliick.dev (precisa de teclado físico)
 
+## Oficina de frases (frases escritas pela turma)
+
+Uma turma escreve frases e a outra digita no jogo. Tudo sem servidor: as frases ficam guardadas no navegador de cada computador.
+
+**Como a turma escreve**
+1. No mapa, toque em **Abrir a oficina**.
+2. Cada criança escreve o nome (opcional) e a frase (2 a 6 palavras). O jogo tira acentos e pontuação sozinho e mostra como vai aparecer no meteoro.
+3. Com 3 frases ou mais, aparece no fim do mapa a missão **Frases dos colegas** (3 fases). Cada meteoro mostra "frase de Ana".
+
+**Como levar para a outra turma**
+- **Mesmos computadores**: não precisa fazer nada. As frases já estão lá no dia seguinte.
+- **Computadores diferentes** (no botão **Modo professor** da oficina):
+  - **Copiar link com as frases**: abra esse link nos outros computadores e as frases entram sozinhas.
+  - **Copiar código** / **Juntar frases**: para juntar as frases de vários computadores, copie o código de cada um, cole todos de uma vez na caixa "Colar códigos", toque em Juntar e copie o link final.
+  - **Baixar arquivo** / **Abrir arquivo**: o mesmo, por pendrive.
+- No Modo professor também dá para apagar frases e dar nome à turma que escreveu.
+
 ## Como funciona
 
 - **11 missões e 33 fases**, do F sozinho até frases inteiras: casa da mão esquerda, casa da mão direita, duas mãos, G e H, linha de cima, linha de baixo, alfabeto inteiro, palavras curtas, médias, grandes e frases bônus (com a barra de espaço). Dá mais de 30 minutos de aula.

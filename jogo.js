@@ -93,6 +93,54 @@ var MISSOES=[
   fases:[{pool:FRASES_1,total:6,queda:34,intervalo:9},{pool:FRASES_2,total:8,queda:30,intervalo:8},{pool:FRASES_1.concat(FRASES_2,FRASES_3),total:10,queda:27,intervalo:7}]}
 ];
 var FASES=[]; MISSOES.forEach(function(m,mi){ m.fases.forEach(function(f,fi){ f.m=mi; f.i=fi; FASES.push(f); }); });
+var N_FIXAS=FASES.length;   // as fases das frases da turma vêm depois destas
+
+/* ======================================================================
+   Frases da turma (escritas pelos colegas na Oficina de frases)
+   Ficam guardadas neste computador e podem viajar por link, código ou arquivo.
+   ====================================================================== */
+var CHAVE_TURMA='invasao-frases-turma';
+var turma={nome:'',frases:[]};   // frases: [{t:'a bola rola',a:'Ana'}]
+try{ var st=JSON.parse(localStorage.getItem(CHAVE_TURMA)||'null'); if(st&&st.frases) turma=st; }catch(e){}
+function salvaTurma(){ try{ localStorage.setItem(CHAVE_TURMA,JSON.stringify(turma)); }catch(e){} montaMissaoTurma(); }
+function limpaFrase(t){   // só letras sem acento e espaços, como o jogo pede
+  return String(t||'').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/ç/g,'c').replace(/[^a-z ]+/g,' ').replace(/\s+/g,' ').trim();
+}
+function limpaNome(t){ return String(t||'').replace(/[|\n\r]/g,' ').replace(/\s+/g,' ').trim().slice(0,20); }
+function checaFrase(t){
+  var f=limpaFrase(t),p=f?f.split(' '):[];
+  if(!f) return 'Escreva uma frase com letras.';
+  if(p.length<2) return 'A frase precisa ter pelo menos 2 palavras.';
+  if(p.length>6) return 'Até 6 palavras, para caber no meteoro.';
+  if(f.length>40) return 'Frase grande demais: até 40 letras.';
+  for(var i=0;i<p.length;i++) if(p[i].length>12) return 'A palavra "'+p[i]+'" é comprida demais (até 12 letras).';
+  if(turma.frases.some(function(x){ return x.t===f; })) return 'Essa frase já está na lista.';
+  return '';
+}
+function codificaTurma(){ var txt=turma.frases.map(function(f){ return (f.a||'')+'|'+f.t; }).join('\n'); return 'IL1.'+btoa(unescape(encodeURIComponent(txt))).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,''); }
+function decodificaCodigo(cod){
+  var achadas=[]; String(cod||'').split(/\s+/).forEach(function(c){
+    var m=c.match(/IL1\.([A-Za-z0-9_-]+)/); if(!m) return;
+    try{ var b=m[1].replace(/-/g,'+').replace(/_/g,'/'); while(b.length%4) b+='='; var txt=decodeURIComponent(escape(atob(b)));
+      txt.split('\n').forEach(function(l){ var i=l.indexOf('|'); if(i<0) return; var t=limpaFrase(l.slice(i+1)),a=limpaNome(l.slice(0,i)); if(t) achadas.push({t:t,a:a}); }); }catch(e){}
+  });
+  return achadas;
+}
+function juntaFrases(lista){ var n=0; lista.forEach(function(f){ if(!turma.frases.some(function(x){ return x.t===f.t; })){ turma.frases.push(f); n++; } }); if(n) salvaTurma(); return n; }
+function linkTurma(){ return location.origin+location.pathname+'#turma='+codificaTurma(); }
+var MISSAO_TURMA={nome:'Frases dos colegas',cor:'#FF8AD8',desc:'',teclas:'',dedos:[8],palavras:true,frases:true,turma:true,
+  dicas:['Estas frases foram <b>escritas pelos seus colegas</b> na Oficina de frases. Leia a frase inteira primeiro e depois digite palavra por palavra, com a <b>barra de espaço</b> no meio.','Os polegares ficam descansando na barra de espaço. Qualquer um dos dois pode apertar.','Sem pressa: a frase mirada cai bem devagar. Olhe para a tela, não para o teclado.'],
+  fases:[]};
+function montaMissaoTurma(){
+  var i=MISSOES.indexOf(MISSAO_TURMA); if(i>=0){ MISSOES.splice(i,1); } FASES.length=N_FIXAS;
+  var fr=turma.frases.map(function(f){ return f.t; }); if(fr.length<3) return;
+  var pool=fr.slice(); var autor={}; turma.frases.forEach(function(f){ autor[f.t]=f.a; });
+  var t1=Math.min(6,fr.length),t2=Math.min(8,fr.length),t3=Math.min(10,fr.length);
+  MISSAO_TURMA.desc=fr.length+' frases escritas pela turma'+(turma.nome?' '+turma.nome:'')+'. Digite com a barra de espaço entre as palavras.';
+  MISSAO_TURMA.fases=[{pool:pool,autor:autor,total:t1,queda:36,intervalo:9},{pool:pool,autor:autor,total:t2,queda:32,intervalo:8},{pool:pool,autor:autor,total:t3,queda:28,intervalo:7}];
+  MISSOES.push(MISSAO_TURMA); var mi=MISSOES.length-1; MISSAO_TURMA.fases.forEach(function(f,fi){ f.m=mi; f.i=fi; FASES.push(f); });
+}
+montaMissaoTurma();
 
 /* alertas de quando um meteoro pousa */
 var LEMBRETES=[
@@ -141,13 +189,13 @@ var NAVE='<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" aria-hid
    ====================================================================== */
 var telaAtual='mapa';
 function mostra(id){
-  ['mapa','jogo','ajustes'].forEach(function(t){ $(t).classList.toggle('oculto',t!==id); });
+  ['mapa','jogo','ajustes','oficina'].forEach(function(t){ $(t).classList.toggle('oculto',t!==id); });
   $('janela').classList.add('oculto'); janelaAcao=null;
   $('btPausa').classList.toggle('oculto',id!=='jogo'); $('topoMeio').style.visibility=id==='jogo'?'visible':'hidden';
   telaAtual=id; if(id==='jogo') tam();
 }
-function aberta(i){ return est.livre||i===0||!!est.feitas[i-1]||!!est.feitas[i]; }
-function proxima(){ for(var i=0;i<FASES.length;i++) if(!est.feitas[i]) return i; return -1; }
+function aberta(i){ if(i>=N_FIXAS) return est.livre||i===N_FIXAS||!!est.feitas[i-1]||!!est.feitas[i]; return est.livre||i===0||!!est.feitas[i-1]||!!est.feitas[i]; }
+function proxima(){ for(var i=0;i<N_FIXAS;i++) if(!est.feitas[i]) return i; return -1; }
 var janelaAcao=null;
 function janela(html,acao,classe){
   var j=$('janela'); j.innerHTML='<div class="cartao '+(classe||'')+'">'+html+'</div>'; j.classList.remove('oculto'); janelaAcao=acao;
@@ -166,6 +214,8 @@ function mapa(){
   tx.appendChild(txt('p',null,n===0?'Digite o que está escrito em cada meteoro para destruí-lo. Cada missão ensina qual dedo cuida de cada tecla. Comece pela estrela que está piscando.'
     :p<0?'Pode repetir qualquer missão para treinar mais. Quanto mais você joga, mais os dedos aprendem sozinhos.':'A estrela que pisca mostra onde você parou. Pode repetir uma missão anterior também.'));
   intro.appendChild(tx); t.appendChild(intro);
+  var of=el('div','oficina-chamada'); of.innerHTML='<div class="of-txt"><b>Oficina de frases</b><span>'+(turma.frases.length?turma.frases.length+' frases da turma guardadas neste computador. Jogue na missão "Frases dos colegas" ou escreva mais.':'A turma escreve frases aqui, e os colegas digitam depois no jogo.')+'</span></div>';
+  var bo=el('button','bt-leve of-bt','Abrir a oficina'); bo.onclick=function(){ oficina(); }; of.appendChild(bo); t.appendChild(of);
   var grade=el('div','missoes');
   MISSOES.forEach(function(m,mi){
     var c=el('article','missao'); c.style.setProperty('--cor',m.cor); c.style.animationDelay=(mi*.05)+'s';
@@ -173,7 +223,8 @@ function mapa(){
     var temAberta=m.fases.some(function(f){ return aberta(FASES.indexOf(f)); });
     if(!temAberta) c.classList.add('fechada');
     if(m.fases.some(function(f){ return FASES.indexOf(f)===p; })) c.classList.add('atual');
-    var topo=el('div','missao-topo'); topo.appendChild(txt('div','missao-num',String(mi+1)));
+    if(m.turma) c.classList.add('turma');
+    var topo=el('div','missao-topo'); topo.appendChild(m.turma?el('div','missao-num',ESTRELA):txt('div','missao-num',String(mi+1)));
     var h=txt('h2',null,m.nome); topo.appendChild(h);
     if(completa) topo.appendChild(el('span','selo-ok',CHECK+'Completa'));
     c.appendChild(topo); c.appendChild(txt('p',null,m.desc));
@@ -213,8 +264,76 @@ function ajustes(){
   chave('Todas as missões abertas','Para o professor escolher qualquer fase.','livre');
   var r=el('button','ajuste perigo'); var rt=txt('div','txt','Recomeçar do zero'); rt.appendChild(txt('small',null,'Apaga o progresso deste computador.')); r.appendChild(rt);
   r.onclick=function(){ if(confirm('Apagar todo o progresso deste computador?')){ est.feitas={}; salva(); mapa(); } };
-  box.appendChild(r); t.appendChild(box); mostra('ajustes');
+  var rf=el('button','ajuste perigo'); var rft=txt('div','txt','Apagar as frases da turma'); rft.appendChild(txt('small',null,turma.frases.length+' frases guardadas neste computador.')); rf.appendChild(rft);
+  rf.onclick=function(){ if(confirm('Apagar as '+turma.frases.length+' frases da turma deste computador?')){ turma={nome:'',frases:[]}; salvaTurma(); ajustes(); } };
+  box.appendChild(r); box.appendChild(rf); t.appendChild(box); mostra('ajustes');
 }
+
+/* ======================================================================
+   Oficina de frases
+   ====================================================================== */
+var prof=false;   // modo professor: mostra apagar, código, link e arquivo
+function oficina(msg){
+  G.rodando=false;
+  var t=$('oficina'); t.innerHTML='';
+  var cab=el('div','intro of-intro',NAVE.replace('<svg ','<svg class="nave" '));
+  var tx=el('div'); tx.appendChild(txt('h1',null,'Oficina de frases'));
+  tx.appendChild(el('p',null,'Escreva uma frase para os colegas digitarem no jogo. Use só <b>letras e espaços</b>: o jogo tira acentos e pontos sozinho. De 2 a 6 palavras.'));
+  cab.appendChild(tx); t.appendChild(cab);
+  if(msg){ t.appendChild(el('div','of-aviso bom',msg)); }
+  var form=el('form','of-form');
+  form.innerHTML='<label class="of-campo"><span>Seu nome (pode deixar em branco)</span><input id="ofNome" maxlength="20" autocomplete="off" placeholder="Ana"></label>'+
+    '<label class="of-campo grande"><span>A frase</span><input id="ofFrase" maxlength="60" autocomplete="off" placeholder="o gato pulou o muro" required></label>'+
+    '<div class="of-previa" id="ofPrevia"><span>No meteoro vai aparecer:</span><b>...</b></div>'+
+    '<div class="linha-bts esq"><button class="bt-principal" type="submit">Guardar frase</button></div>';
+  t.appendChild(form);
+  var inN=form.querySelector('#ofNome'),inF=form.querySelector('#ofFrase'),pv=form.querySelector('#ofPrevia');
+  function previa(){ var f=limpaFrase(inF.value),erro=inF.value.trim()?checaFrase(inF.value):''; pv.querySelector('b').textContent=f?f.toUpperCase():'...'; pv.classList.toggle('erro',!!erro); pv.querySelector('span').textContent=erro||'No meteoro vai aparecer:'; }
+  inF.oninput=previa; previa();
+  form.onsubmit=function(e){ e.preventDefault(); var erro=checaFrase(inF.value); if(erro){ previa(); inF.focus(); tom([220],'triangle'); return; }
+    turma.frases.push({t:limpaFrase(inF.value),a:limpaNome(inN.value)}); salvaTurma(); tom([523,659,784]);
+    oficina('Frase guardada! Ela vai cair como meteoro para os colegas. Já são '+turma.frases.length+' frases.'); $('ofNome').value=inN.value; setTimeout(function(){ $('ofFrase').focus(); },50); };
+  var lt=el('div','of-lista-topo'); lt.appendChild(txt('h2','titulo-tela',turma.frases.length?turma.frases.length+(turma.frases.length===1?' frase guardada':' frases guardadas'):'Nenhuma frase ainda'));
+  var bp=el('button','bt-leve',prof?'Fechar modo professor':'Modo professor'); bp.onclick=function(){ prof=!prof; oficina(); }; lt.appendChild(bp); t.appendChild(lt);
+  if(turma.frases.length<3) t.appendChild(txt('p','texto-tela','Com 3 frases ou mais, aparece no mapa a missão "Frases dos colegas".'));
+  var ul=el('ul','of-lista');
+  turma.frases.slice().reverse().forEach(function(f,n){
+    var li=el('li'); li.style.animationDelay=(Math.min(n,12)*.03)+'s'; li.innerHTML='<span class="of-met">'+ESTRELA+'</span><div class="of-txt2"><b>'+f.t.toUpperCase()+'</b><small>'+(f.a?'de '+escapa(f.a):'sem nome')+'</small></div>';
+    if(prof){ var bx=el('button','of-x','Apagar'); bx.setAttribute('aria-label','Apagar a frase '+f.t); bx.onclick=function(){ turma.frases.splice(turma.frases.indexOf(f),1); salvaTurma(); oficina(); }; li.appendChild(bx); }
+    ul.appendChild(li);
+  });
+  t.appendChild(ul);
+  if(prof){
+    var cx2=el('div','of-prof');
+    cx2.innerHTML='<h2 class="titulo-tela">Levar as frases para outros computadores</h2>'+
+      '<p class="texto-tela">As frases ficam guardadas <b>só neste computador</b>. Se a outra turma for usar os mesmos computadores, não precisa fazer nada. Para juntar as frases de vários computadores: copie o código de cada um, cole todos de uma vez na caixa abaixo, toque em Juntar e depois copie o link final para abrir nos outros computadores.</p>'+
+      '<label class="of-campo"><span>Nome da turma que escreveu (aparece no jogo)</span><input id="ofTurma" maxlength="30" placeholder="3º ano A" value="'+escapa(turma.nome)+'"></label>'+
+      '<div class="linha-bts esq"><button class="bt-leve" id="ofCopiaLink" type="button">Copiar link com as frases</button><button class="bt-leve" id="ofCopiaCod" type="button">Copiar código</button><button class="bt-leve" id="ofBaixa" type="button">Baixar arquivo</button><label class="bt-leve of-arq">Abrir arquivo<input type="file" id="ofArq" accept=".txt,.json,text/plain" hidden></label></div>'+
+      '<div class="of-codigo"><span>Código deste computador</span><textarea id="ofCod" readonly rows="2"></textarea></div>'+
+      '<div class="of-codigo"><span>Colar códigos de outros computadores (pode colar vários de uma vez)</span><textarea id="ofCola" rows="3" placeholder="IL1...."></textarea><div class="linha-bts esq"><button class="bt-principal sol" id="ofJunta" type="button">Juntar frases</button></div></div>'+
+      '<p class="of-msg" id="ofMsg" aria-live="polite"></p>';
+    t.appendChild(cx2);
+    var cod=$('ofCod'); cod.value=turma.frases.length?codificaTurma():''; var msgEl=$('ofMsg');
+    var diz=function(m){ msgEl.textContent=m; };
+    $('ofTurma').onchange=function(){ turma.nome=limpaNome(this.value).slice(0,30); salvaTurma(); diz('Nome da turma guardado.'); };
+    var copia=function(texto,ok){ if(navigator.clipboard&&navigator.clipboard.writeText){ navigator.clipboard.writeText(texto).then(function(){ diz(ok); },function(){ cod.value=texto; cod.select(); diz('Não consegui copiar sozinho. Selecione o texto da caixa e copie com Ctrl+C.'); }); } else { cod.value=texto; cod.select(); try{ document.execCommand('copy'); diz(ok); }catch(e){ diz('Selecione o texto da caixa e copie com Ctrl+C.'); } } };
+    $('ofCopiaLink').onclick=function(){ if(!turma.frases.length) return diz('Ainda não há frases.'); copia(linkTurma(),'Link copiado! Abra esse link nos outros computadores: as frases entram sozinhas.'); };
+    $('ofCopiaCod').onclick=function(){ if(!turma.frases.length) return diz('Ainda não há frases.'); copia(codificaTurma(),'Código copiado! Cole na caixa "Colar códigos" de outro computador.'); };
+    $('ofBaixa').onclick=function(){ if(!turma.frases.length) return diz('Ainda não há frases.'); var b=new Blob([codificaTurma()+'\n\n'+turma.frases.map(function(f){ return f.t+(f.a?' ('+f.a+')':''); }).join('\n')],{type:'text/plain'}); var a=document.createElement('a'); a.href=URL.createObjectURL(b); a.download='frases-da-turma.txt'; document.body.appendChild(a); a.click(); setTimeout(function(){ URL.revokeObjectURL(a.href); a.remove(); },500); diz('Arquivo baixado. Leve no pendrive e use "Abrir arquivo" no outro computador.'); };
+    $('ofArq').onchange=function(){ var f=this.files[0]; if(!f) return; var r=new FileReader(); r.onload=function(){ var n=juntaFrases(decodificaCodigo(r.result)); oficina(n?n+' frases entraram do arquivo!':'O arquivo não tinha frases novas.'); }; r.readAsText(f); };
+    $('ofJunta').onclick=function(){ var ach=decodificaCodigo($('ofCola').value); if(!ach.length) return diz('Não achei nenhum código válido. Ele começa com IL1.'); var n=juntaFrases(ach); oficina(n?n+' frases novas entraram! Agora são '+turma.frases.length+'.':'Essas frases já estavam aqui.'); };
+  }
+  var volta=el('div','linha-bts'); var bv=el('button','bt-leve','Voltar às missões'); bv.onclick=mapa; volta.appendChild(bv); t.appendChild(volta);
+  mostra('oficina'); setTimeout(function(){ if(!msg) inF.focus(); },80);
+}
+function escapa(t){ return String(t).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/"/g,'&quot;'); }
+/* frases que chegam pelo link (#turma=IL1....) */
+(function(){
+  var m=location.hash.match(/turma=([^&]+)/); if(!m) return;
+  var ach=decodificaCodigo(decodeURIComponent(m[1])); var n=juntaFrases(ach);
+  try{ history.replaceState(null,'',location.pathname+location.search); }catch(e){}
+  if(n) setTimeout(function(){ janela('<div class="rotulo">Oficina de frases</div><h2 id="janelaTit">'+n+' frases dos colegas chegaram!</h2><p>Elas já estão na missão <b>Frases dos colegas</b>, no fim do mapa.</p><div class="linha-bts"><button class="bt-principal">Legal!</button></div>',function(){ fecha(); mapa(); }); },300);
+})();
 
 /* ======================================================================
    Teclado na tela
@@ -270,7 +389,7 @@ function dicasMissao(M,pag,fim){
   var d=M.dicas[pag],ult=pag===M.dicas.length-1;
   var teclasHtml='';
   if(M.teclas&&pag===0){ teclasHtml='<div class="teclas-grandes">'+M.teclas.split('').slice(0,10).map(function(k){ return '<i style="--kc:'+COR_DEDO[DEDO_DE[k]]+'">'+k+'</i>'; }).join('')+'</div>'; }
-  janela('<div class="rotulo">Missão '+(MISSOES.indexOf(M)+1)+' · dica '+(pag+1)+' de '+M.dicas.length+'</div><h2 id="janelaTit">'+M.nome+'</h2>'+teclasHtml+
+  janela('<div class="rotulo">'+(M.turma?'Frases dos colegas':'Missão '+(MISSOES.indexOf(M)+1))+' · dica '+(pag+1)+' de '+M.dicas.length+'</div><h2 id="janelaTit">'+M.nome+'</h2>'+teclasHtml+
     '<div class="dica"><div class="maos">'+maos(M.dedos.length?M.dedos:null,{numeros:true})+'</div><div class="txt">'+d+'</div></div>'+
     '<div class="linha-bts">'+(pag>0?'<button class="bt-leve" id="btAnt">Voltar</button>':'')+'<button class="bt-principal'+(ult?'':' sol')+'">'+(ult?'Começar a missão':'Próxima dica')+'</button></div>'+
     '<div class="atalho">Aperte <kbd>Enter</kbd> para continuar</div>',
@@ -282,7 +401,7 @@ function preparaFase(i){
   G.fase=i; var F=FASES[i],M=MISSOES[F.m];
   mostra('jogo'); G.rodando=false; G.met=[]; G.alvo=null; G.part=[]; G.lasers=[]; G.ondas=[]; hud();
   var oque=M.palavras?'Digite a <b>palavra inteira</b> de cada meteoro, uma letra por vez.':'Digite a <b>letra</b> de cada meteoro antes que ele chegue ao planeta.';
-  janela('<div class="rotulo">Missão '+(F.m+1)+' · fase '+(F.i+1)+' de '+M.fases.length+'</div><h2 id="janelaTit">'+M.nome+'</h2><p>'+oque+' São <b>'+F.total+' meteoros</b>. O meteoro que você está mirando cai mais devagar.</p>'+
+  janela('<div class="rotulo">'+(M.turma?'Frases dos colegas':'Missão '+(F.m+1))+' · fase '+(F.i+1)+' de '+M.fases.length+'</div><h2 id="janelaTit">'+M.nome+'</h2><p>'+oque+' São <b>'+F.total+' meteoros</b>. O meteoro que você está mirando cai mais devagar.</p>'+
     (F.i>0?'<div class="dica"><div class="maos">'+maos(M.dedos.length?M.dedos:null)+'</div><div class="txt">'+M.dicas[F.i%M.dicas.length]+'</div></div>':'')+
     '<div class="linha-bts"><button class="bt-principal">Começar</button><button class="bt-leve" id="btMapaJ">Missões</button></div><div class="atalho">Aperte <kbd>Enter</kbd> para começar · <kbd>Esc</kbd> pausa</div>',comecaFase);
   $('btMapaJ').onclick=mapa; $('janela').querySelector('.cartao').style.setProperty('--cor',M.cor);
@@ -293,7 +412,7 @@ function comecaFase(){
 }
 function hud(){
   var F=FASES[G.fase],M=MISSOES[F.m];
-  $('chipMissao').innerHTML='<span style="width:12px;height:12px;border-radius:50%;background:'+M.cor+'"></span>'; $('chipMissao').appendChild(txt('span',null,'Missão '+(F.m+1)+': '+M.nome));
+  $('chipMissao').innerHTML='<span style="width:12px;height:12px;border-radius:50%;background:'+M.cor+'"></span>'; $('chipMissao').appendChild(txt('span',null,M.turma?M.nome:'Missão '+(F.m+1)+': '+M.nome));
   var ps=$('passos'); ps.innerHTML=''; M.fases.forEach(function(f,fi){ var d=el('i'); if(est.feitas[FASES.indexOf(f)]) d.className='f'; if(fi===F.i) d.className='a'; ps.appendChild(d); });
   var falta=F.total-G.destruidos; $('restam').innerHTML='<span>Meteoros</span><b>'+falta+'</b><span class="barra"><i style="width:'+(G.destruidos/F.total*100)+'%"></i></span>';
 }
@@ -307,7 +426,7 @@ function lanca(){
   var raio=frase?46:Math.max(30,16+pal.length*10);
   var marg=Math.max(raio,pal.length*8)+30;
   var x=marg+Math.random()*Math.max(1,W-2*marg);
-  G.met.push({pal:pal,dig:0,x:x,y:-raio,r:raio,vel:(chao+raio)/(F.queda*fator()),morto:false,giro:Math.random()*6.28,vgiro:(Math.random()-.5)*.8,tom:Math.random()});
+  G.met.push({pal:pal,autor:F.autor?F.autor[pal]:'',dig:0,x:x,y:-raio,r:raio,vel:(chao+raio)/(F.queda*fator()),morto:false,giro:Math.random()*6.28,vgiro:(Math.random()-.5)*.8,tom:Math.random()});
   G.lancados++;
 }
 function tecla(c){
@@ -353,9 +472,9 @@ function pousou(m){
 }
 function fimFase(){
   G.rodando=false; var F=FASES[G.fase],M=MISSOES[F.m],novo=!est.feitas[G.fase]; est.feitas[G.fase]=1; salva(); tom([523,659,784,1046]);
-  var ult=G.fase===FASES.length-1,fimMissao=F.i===M.fases.length-1;
+  var ult=G.fase===N_FIXAS-1||G.fase===FASES.length-1,fimMissao=F.i===M.fases.length-1;
   var tit=fimMissao?'Missão completa!':'Fase completa!';
-  var sub=fimMissao?(ult?'Você terminou todas as missões, até as frases bônus, usando os dez dedos. Isso é o que importa!':'A próxima missão ensina um pedaço novo do teclado.'):'Mais uma estrela na sua constelação.';
+  var sub=fimMissao?(ult?(M.turma?'Você digitou as frases escritas pelos seus colegas. Que tal escrever as suas na Oficina de frases?':'Você terminou todas as missões, até as frases bônus, usando os dez dedos. Isso é o que importa!'):'A próxima missão ensina um pedaço novo do teclado.'):'Mais uma estrela na sua constelação.';
   var msgCaidos=G.caidos===0?'Nenhum meteoro pousou nesta fase!':G.caidos===1?'Um meteoro pousou, e você ajeitou as mãos e seguiu em frente.':'Alguns meteoros pousaram e você continuou. Isso é treinar!';
   janela('<div class="rotulo">Missão '+(F.m+1)+' · fase '+(F.i+1)+'</div><div class="medalha">'+ESTRELA+'</div><h2 id="janelaTit">'+tit+'</h2><p>'+sub+'</p><p>'+msgCaidos+'</p>'+
     '<div class="linha-bts"><button class="bt-principal">'+(ult?'Ver as missões':'Continuar')+'</button>'+(ult?'':'<button class="bt-leve" id="btMapaJ">Missões</button>')+'</div><div class="atalho">Aperte <kbd>Enter</kbd></div>',
@@ -432,6 +551,7 @@ function desenha(){
     var prox=falta.charAt(0),resto=falta.slice(1),d=DEDO_DE[prox==='_'?' ':prox.toLowerCase()];
     cx.fillStyle=d!==undefined?COR_DEDO[d]:'#fff'; cx.fillText(prox,x0+wf,m.y+1);
     cx.fillStyle='#fff'; cx.fillText(resto,x0+wf+cx.measureText(prox).width,m.y+1);
+    if(m.autor){ cx.font='800 13px Nunito, sans-serif'; cx.textAlign='center'; cx.fillStyle='rgba(11,15,46,.55)'; var la=cx.measureText('frase de '+m.autor).width; roundRect(m.x-la/2-8,m.y+fs*.75,la+16,20,8); cx.fill(); cx.fillStyle='#FF8AD8'; cx.fillText('frase de '+m.autor,m.x,m.y+fs*.75+10); }
   });
   G.ondas.forEach(function(o){ var k=1-o.v/(o.poeira?.6:.5); cx.strokeStyle=o.poeira?'rgba(180,200,220,'+(1-k)*.7+')':'rgba(255,209,102,'+(1-k)+')'; cx.lineWidth=o.poeira?6:4;
     cx.beginPath(); if(o.poeira){ cx.ellipse(o.x,o.y,o.r*(1+k*2),o.r*.35*(1+k),0,0,6.28); } else cx.arc(o.x,o.y,o.r*(1+k*1.6),0,6.28); cx.stroke(); });
@@ -457,15 +577,16 @@ function loop(t){
 
 /* ---------- teclado físico ---------- */
 document.addEventListener('keydown',function(e){
-  if(e.key==='Enter'&&janelaAcao){ e.preventDefault(); janelaAcao(); return; }
+  if(e.key==='Enter'&&janelaAcao&&!(e.target&&e.target.tagName==='TEXTAREA')){ e.preventDefault(); janelaAcao(); return; }
   if(e.key==='Escape'){ if(G.pausado&&janelaAcao){ janelaAcao(); } else if(G.rodando) pausa(); return; }
   if(telaAtual!=='jogo'||janelaAcao) return;
+  if(e.target&&(e.target.tagName==='INPUT'||e.target.tagName==='TEXTAREA')) return;
   if(e.key&&e.key.length===1){ var c=e.key.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,''); /* se a criança esbarrar no acento, a letra ainda vale */ if(c>='a'&&c<='z'){ e.preventDefault(); tecla(c); } else if(c===' '){ e.preventDefault(); tecla(' '); } else if(c==='ç') e.preventDefault(); }
   if(e.key==='Backspace') e.preventDefault();
 });
 window.addEventListener('blur',function(){ if(G.rodando&&!G.pausado) pausa(); });
 
 $('btInicio').onclick=mapa; $('btMapa').onclick=mapa; $('btAjustes').onclick=ajustes; $('btPausa').onclick=pausa;
-window.__jogo={G:G,FASES:FASES,MISSOES:MISSOES,tecla:tecla,est:est};
+window.__jogo={G:G,FASES:FASES,MISSOES:MISSOES,tecla:tecla,est:est,turma:function(){return turma;},oficina:oficina,codificaTurma:codificaTurma,decodificaCodigo:decodificaCodigo,juntaFrases:juntaFrases,limpaFrase:limpaFrase,checaFrase:checaFrase};
 aplicaAnim(); tamFundo(); mapa(); requestAnimationFrame(loop);
 })();
