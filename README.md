@@ -6,20 +6,13 @@ Jogo de **digitação** para crianças: meteoros com letras, palavras e frases c
 
 ## Oficina de frases (frases escritas pela turma)
 
-Uma turma escreve frases e a outra digita no jogo. Tudo sem servidor: as frases ficam guardadas no navegador de cada computador.
+Uma turma escreve frases e a outra digita no jogo. As frases vão para um **servidor** (uma planilha do Google ou um Worker da Cloudflare), organizadas por **código de sala**, então qualquer computador que entrar na sala vê as mesmas frases, ao vivo.
 
-**Como a turma escreve**
-1. No mapa, toque em **Abrir a oficina**.
-2. Cada criança escreve o nome (opcional) e a frase (2 a 6 palavras). O jogo tira acentos e pontuação sozinho e mostra como vai aparecer no meteoro.
-3. Com 3 frases ou mais, aparece no fim do mapa a missão **Frases dos colegas** (3 fases). Cada meteoro mostra "frase de Ana".
+- **Turma que escreve:** `?sala=foguete&oficina=1` abre a oficina já na sala. Nome opcional, frase de 2 a 6 palavras; o jogo mostra como vai aparecer no meteoro (sem acentos e pontuação) e envia.
+- **Turma que joga:** `?sala=foguete` entra na sala; com 3 frases ou mais aparece a missão **Frases dos colegas** (3 fases). Cada meteoro mostra "frase de Ana".
+- **Modo professor** (dentro da oficina): apagar frases, senha opcional, copiar os links da sala.
 
-**Como levar para a outra turma**
-- **Mesmos computadores**: não precisa fazer nada. As frases já estão lá no dia seguinte.
-- **Computadores diferentes** (no botão **Modo professor** da oficina):
-  - **Copiar link com as frases**: abra esse link nos outros computadores e as frases entram sozinhas.
-  - **Copiar código** / **Juntar frases**: para juntar as frases de vários computadores, copie o código de cada um, cole todos de uma vez na caixa "Colar códigos", toque em Juntar e copie o link final.
-  - **Baixar arquivo** / **Abrir arquivo**: o mesmo, por pendrive.
-- No Modo professor também dá para apagar frases e dar nome à turma que escreveu.
+A configuração do servidor leva poucos minutos e está explicada em [`servidor/LEIAME.md`](servidor/LEIAME.md). O endereço fica em [`servidor.js`](servidor.js).
 
 ## Como funciona
 
