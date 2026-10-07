@@ -32,6 +32,7 @@ function trata(e, corpo){
     var p = (e && e.parameter) || {}; corpo = corpo || {};
     var acao = String(corpo.acao || p.acao || 'listar');
     var sala = limpaSala(corpo.sala || p.sala);
+    if (acao === 'ping') return { ok: true, ping: true, hora: String(new Date()) };   // teste sem tocar na planilha
     if (!sala) return { ok: false, erro: 'Informe o código da sala.' };
     if (acao === 'listar') return { ok: true, sala: sala, frases: listar(sala) };
     if (acao === 'enviar') return enviar(sala, corpo.t || p.t, corpo.a || p.a);
@@ -40,6 +41,22 @@ function trata(e, corpo){
   } catch (err) {
     return { ok: false, erro: 'Erro no servidor: ' + (err && err.message ? err.message : err) };
   }
+}
+
+/* ---------- teste dentro do editor ----------
+   Selecione "testarNoEditor" na barra de cima e clique em "Executar". Na primeira vez o Google pede
+   autorização (Revisar permissões > sua conta > Avançado > Acessar... > Permitir). No fim, o registro
+   de execução mostra "OK" e a planilha aparece no seu Drive. Depois publique uma nova versão. */
+function testarNoEditor(){
+  var sala = 'teste-do-editor';
+  var r1 = trata({ parameter: { acao: 'listar', sala: sala } }, null);
+  var r2 = trata({ parameter: {} }, { acao: 'enviar', sala: sala, t: 'teste feito no editor', a: 'professor' });
+  var r3 = trata({ parameter: { acao: 'listar', sala: sala } }, null);
+  var id = r2.ok ? r2.frase.id : (r3.frases[0] ? r3.frases[0].id : '');
+  var r4 = trata({ parameter: {} }, { acao: 'apagar', sala: sala, id: id, senha: SENHA_PROFESSOR });
+  var tudoOk = r1.ok && (r2.ok || /já está/.test(r2.erro || '')) && r3.ok && r4.ok;
+  Logger.log((tudoOk ? 'OK: o servidor está funcionando. ' : 'ALGO FALHOU. ') + JSON.stringify({ listar: r1, enviar: r2, listarDeNovo: r3, apagar: r4 }));
+  return tudoOk;
 }
 
 /* ---------- planilha ---------- */
