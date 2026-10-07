@@ -33,10 +33,10 @@ jobs:
           echo "respostas na cadeia: $RESPOSTAS · com Access-Control-Allow-Origin: $COMCORS"
           if [ "$COMCORS" -lt "$RESPOSTAS" ]; then echo "::warning::Nem toda resposta trouxe Access-Control-Allow-Origin. O navegador pode bloquear a chamada."; fi
 
-      - name: Enviar uma frase de teste (POST text/plain, como o jogo faz)
+      - name: Enviar uma frase de teste (POST text/plain; no 302 o curl troca para GET, como o navegador)
         run: |
           set -e
-          curl -sS -L -D cab2.txt -o corpo2.txt -X POST -H 'Content-Type: text/plain;charset=utf-8' --data '{"acao":"enviar","sala":"'"$SALA"'","t":"teste do github actions","a":"robô"}' "$URL?acao=enviar&_=$(date +%s)"
+          curl -sS -L -D cab2.txt -o corpo2.txt -H 'Content-Type: text/plain;charset=utf-8' --data '{"acao":"enviar","sala":"'"$SALA"'","t":"teste do github actions","a":"robô"}' "$URL?acao=enviar&_=$(date +%s)"
           echo "--- cabeçalhos ---"; cat cab2.txt; echo "--- corpo ---"; cat corpo2.txt; echo
           grep -q '"ok":true' corpo2.txt || { echo "::error::O envio não funcionou."; exit 1; }
           ID=$(grep -o '"id":"[^"]*"' corpo2.txt | head -1 | sed 's/"id":"//;s/"//'); echo "ID=$ID" >> "$GITHUB_ENV"; echo "id da frase: $ID"
@@ -46,9 +46,9 @@ jobs:
           set -e
           curl -sS -L -o corpo3.txt "$URL?acao=listar&sala=$SALA&_=$(date +%s)"; cat corpo3.txt; echo
           grep -q 'teste do github actions' corpo3.txt || { echo "::error::A frase enviada não apareceu na listagem."; exit 1; }
-          curl -sS -L -o corpo4.txt -X POST -H 'Content-Type: text/plain;charset=utf-8' --data '{"acao":"enviar","sala":"'"$SALA"'","t":"Teste do GitHub Actions!","a":""}' "$URL?acao=enviar"; cat corpo4.txt; echo
+          curl -sS -L -o corpo4.txt -H 'Content-Type: text/plain;charset=utf-8' --data '{"acao":"enviar","sala":"'"$SALA"'","t":"Teste do GitHub Actions!","a":""}' "$URL?acao=enviar"; cat corpo4.txt; echo
           grep -q '"ok":false' corpo4.txt || { echo "::error::A frase repetida deveria ser recusada."; exit 1; }
-          curl -sS -L -o corpo5.txt -X POST -H 'Content-Type: text/plain;charset=utf-8' --data '{"acao":"apagar","sala":"'"$SALA"'","id":"'"$ID"'","senha":""}' "$URL?acao=apagar"; cat corpo5.txt; echo
+          curl -sS -L -o corpo5.txt -H 'Content-Type: text/plain;charset=utf-8' --data '{"acao":"apagar","sala":"'"$SALA"'","id":"'"$ID"'","senha":""}' "$URL?acao=apagar"; cat corpo5.txt; echo
           grep -q '"ok":true' corpo5.txt || { echo "::error::Não consegui apagar a frase de teste."; exit 1; }
           curl -sS -L -o corpo6.txt "$URL?acao=listar&sala=$SALA&_=$(date +%s)"; cat corpo6.txt; echo
           grep -q 'teste do github actions' corpo6.txt && { echo "::error::A frase continua lá depois de apagar."; exit 1; }
