@@ -1,0 +1,14 @@
+# Servidor de frases do Invasão das Letras (Cloudflare Worker + KV)
+# O workflow do GitHub Actions cria o banco KV e troca o id abaixo antes de publicar.
+name = "invasao-frases"
+main = "worker.js"
+compatibility_date = "2025-01-01"
+workers_dev = true
+
+[vars]
+# Senha para apagar frases pelo jogo. Em branco = sem senha.
+SENHA_PROFESSOR = ""
+
+[[kv_namespaces]]
+binding = "FRASES"
+id = "SUBSTITUIDO_PELO_WORKFLOW"
