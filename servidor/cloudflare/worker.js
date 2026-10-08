@@ -31,7 +31,8 @@ export default {
 
 /* cada frase é uma chave do KV: "sala:<sala>:<id>"; o texto e o nome ficam nos metadados,
    assim uma única listagem devolve tudo e duas crianças enviando ao mesmo tempo não se atropelam */
-async function listar(env, sala) {
+async function listar(env, sala) { return (await listarComTs(env, sala)).map(({ id, t, a }) => ({ id, t, a })); }
+async function listarComTs(env, sala) {
   const prefix = 'sala:' + sala + ':';
   const out = []; let cursor;
   do {
@@ -40,15 +41,20 @@ async function listar(env, sala) {
     cursor = r.list_complete ? undefined : r.cursor;
   } while (cursor);
   out.sort((x, y) => (x.ts || 0) - (y.ts || 0) || (x.id < y.id ? -1 : 1));
-  return out.map(({ id, t, a }) => ({ id, t, a }));
+  return out;
 }
 async function enviar(env, sala, t, a) {
   const f = limpaFrase(t), nome = limpaNome(a);
   const erro = checaFrase(f); if (erro) return { ok: false, erro };
-  const atuais = await listar(env, sala);
-  if (atuais.length >= MAX_POR_SALA) return { ok: false, erro: 'Esta sala já tem frases demais.' };
-  if (atuais.some(x => x.t === f)) return { ok: false, erro: 'Essa frase já está na sala.' };
+  const atuais = await listarComTs(env, sala);
   const ts = Date.now();
+  const igual = atuais.find(x => x.t === f);
+  if (igual) {
+    // a mesma frase chegou duas vezes em poucos segundos (clique repetido ou reenvio da rede): conta como sucesso
+    if (ts - (igual.ts || 0) < 30000) return { ok: true, frase: { id: igual.id, t: f, a: igual.a }, repetida: true };
+    return { ok: false, erro: 'Essa frase já está na sala.' };
+  }
+  if (atuais.length >= MAX_POR_SALA) return { ok: false, erro: 'Esta sala já tem frases demais.' };
   const id = ts.toString(36) + Math.random().toString(36).slice(2, 6);
   await env.FRASES.put('sala:' + sala + ':' + id, '1', { metadata: { t: f, a: nome, ts } });
   return { ok: true, frase: { id, t: f, a: nome } };

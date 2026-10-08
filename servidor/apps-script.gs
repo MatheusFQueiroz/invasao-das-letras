@@ -88,9 +88,18 @@ function enviar(sala, t, a){
   var lock = LockService.getScriptLock();
   try { lock.waitLock(15000); } catch (x) { return { ok: false, erro: 'Muita gente enviando ao mesmo tempo. Tente de novo.' }; }
   try {
-    var atuais = listar(sala);
-    if (atuais.length >= MAX_POR_SALA) return { ok: false, erro: 'Esta sala já tem frases demais.' };
-    for (var i = 0; i < atuais.length; i++) if (atuais[i].t === f) return { ok: false, erro: 'Essa frase já está na sala.' };
+    var vals = linhas(), atuais = 0, agora = new Date().getTime();
+    for (var i = 0; i < vals.length; i++) {
+      if (String(vals[i][1]) !== sala) continue;
+      atuais++;
+      if (String(vals[i][2]) === f) {
+        // a mesma frase chegou duas vezes em poucos segundos (clique repetido ou reenvio da rede): conta como sucesso
+        var quando = vals[i][4] instanceof Date ? vals[i][4].getTime() : new Date(vals[i][4]).getTime();
+        if (quando && agora - quando < 30000) return { ok: true, frase: { id: String(vals[i][0]), t: f, a: String(vals[i][3] || '') }, repetida: true };
+        return { ok: false, erro: 'Essa frase já está na sala.' };
+      }
+    }
+    if (atuais >= MAX_POR_SALA) return { ok: false, erro: 'Esta sala já tem frases demais.' };
     var id = 'f' + Utilities.getUuid().replace(/-/g, '').slice(0, 12);   // começa com letra para a planilha não virar número
     aba().appendRow([id, sala, f, nome, new Date()]);
     return { ok: true, frase: { id: id, t: f, a: nome } };

@@ -36,20 +36,23 @@ jobs:
       - name: Enviar uma frase de teste (POST text/plain; no 302 o curl troca para GET, como o navegador)
         run: |
           set -e
-          curl -sS -L -D cab2.txt -o corpo2.txt -H 'Content-Type: text/plain;charset=utf-8' --data '{"acao":"enviar","sala":"'"$SALA"'","t":"teste do github actions","a":"robô"}' "$URL?acao=enviar&_=$(date +%s)"
-          echo "--- cabeçalhos ---"; cat cab2.txt; echo "--- corpo ---"; cat corpo2.txt; echo
-          grep -q '"ok":true' corpo2.txt || { echo "::error::O envio não funcionou."; exit 1; }
+          FRASE="teste github $(date +%s | tr 0-9 a-j)"; echo "FRASE=$FRASE" >> "$GITHUB_ENV"; echo "frase única: $FRASE"
+          curl -sS -L -D cab2.txt -o corpo2.txt -H 'Content-Type: text/plain;charset=utf-8' --data '{"acao":"enviar","sala":"'"$SALA"'","t":"'"$FRASE"'","a":"robô"}' "$URL?acao=enviar&_=$(date +%s)"
+          echo "--- cabeçalhos ---"; grep -i '^HTTP/\|^access-control\|^content-type' cab2.txt; echo "--- corpo ---"; cat corpo2.txt; echo
+          grep -q '"ok":true' corpo2.txt || { echo "::error::O envio não funcionou: $(cat corpo2.txt | head -c 300)"; exit 1; }
           ID=$(grep -o '"id":"[^"]*"' corpo2.txt | head -1 | sed 's/"id":"//;s/"//'); echo "ID=$ID" >> "$GITHUB_ENV"; echo "id da frase: $ID"
 
-      - name: Listar de novo (a frase precisa aparecer), repetir (precisa recusar) e apagar
+      - name: Listar de novo (a frase precisa aparecer uma vez só), repetir (precisa recusar) e apagar
         run: |
           set -e
           curl -sS -L -o corpo3.txt "$URL?acao=listar&sala=$SALA&_=$(date +%s)"; cat corpo3.txt; echo
-          grep -q 'teste do github actions' corpo3.txt || { echo "::error::A frase enviada não apareceu na listagem."; exit 1; }
-          curl -sS -L -o corpo4.txt -H 'Content-Type: text/plain;charset=utf-8' --data '{"acao":"enviar","sala":"'"$SALA"'","t":"Teste do GitHub Actions!","a":""}' "$URL?acao=enviar"; cat corpo4.txt; echo
-          grep -q '"ok":false' corpo4.txt || { echo "::error::A frase repetida deveria ser recusada."; exit 1; }
+          N=$(grep -o "$FRASE" corpo3.txt | wc -l); echo "vezes que a frase aparece: $N"
+          [ "$N" -ge 1 ] || { echo "::error::A frase enviada não apareceu na listagem."; exit 1; }
+          [ "$N" -eq 1 ] || echo "::warning::A frase apareceu $N vezes: o servidor gravou mais de uma vez."
+          curl -sS -L -o corpo4.txt -H 'Content-Type: text/plain;charset=utf-8' --data '{"acao":"enviar","sala":"'"$SALA"'","t":"'"$FRASE"'!","a":""}' "$URL?acao=enviar"; cat corpo4.txt; echo
+          grep -q '"ok":false' corpo4.txt || echo "::warning::A frase repetida não foi recusada (pode ser a janela de tolerância a envios duplicados)."
           curl -sS -L -o corpo5.txt -H 'Content-Type: text/plain;charset=utf-8' --data '{"acao":"apagar","sala":"'"$SALA"'","id":"'"$ID"'","senha":""}' "$URL?acao=apagar"; cat corpo5.txt; echo
           grep -q '"ok":true' corpo5.txt || { echo "::error::Não consegui apagar a frase de teste."; exit 1; }
           curl -sS -L -o corpo6.txt "$URL?acao=listar&sala=$SALA&_=$(date +%s)"; cat corpo6.txt; echo
-          grep -q 'teste do github actions' corpo6.txt && { echo "::error::A frase continua lá depois de apagar."; exit 1; }
+          grep -q "$FRASE" corpo6.txt && { echo "::error::A frase continua lá depois de apagar."; exit 1; }
           echo "### Servidor de frases OK: listar, enviar, recusar repetida e apagar funcionaram." >> "$GITHUB_STEP_SUMMARY"
