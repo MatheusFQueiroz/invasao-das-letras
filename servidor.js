@@ -3,4 +3,4 @@
    (Google Apps Script: termina em /exec · Cloudflare: termina em .workers.dev).
    Guia passo a passo: servidor/LEIAME.md
    Em branco = a oficina fica desligada. */
-var SERVIDOR_FRASES = "";
+var SERVIDOR_FRASES = "https://script.google.com/macros/s/AKfycbw8nZQn64PkpAjQWUDTc2YUf5b_42dtHVZ05x-DlSLpa4eP-ffqqQcIzPl31w27AgogGQ/exec";

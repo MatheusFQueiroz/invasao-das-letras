@@ -32,6 +32,7 @@ function trata(e, corpo){
     var p = (e && e.parameter) || {}; corpo = corpo || {};
     var acao = String(corpo.acao || p.acao || 'listar');
     var sala = limpaSala(corpo.sala || p.sala);
+    if (acao === 'ping') return { ok: true, ping: true, hora: String(new Date()) };   // teste sem tocar na planilha
     if (!sala) return { ok: false, erro: 'Informe o código da sala.' };
     if (acao === 'listar') return { ok: true, sala: sala, frases: listar(sala) };
     if (acao === 'enviar') return enviar(sala, corpo.t || p.t, corpo.a || p.a);
@@ -40,6 +41,22 @@ function trata(e, corpo){
   } catch (err) {
     return { ok: false, erro: 'Erro no servidor: ' + (err && err.message ? err.message : err) };
   }
+}
+
+/* ---------- teste dentro do editor ----------
+   Selecione "testarNoEditor" na barra de cima e clique em "Executar". Na primeira vez o Google pede
+   autorização (Revisar permissões > sua conta > Avançado > Acessar... > Permitir). No fim, o registro
+   de execução mostra "OK" e a planilha aparece no seu Drive. Depois publique uma nova versão. */
+function testarNoEditor(){
+  var sala = 'teste-do-editor';
+  var r1 = trata({ parameter: { acao: 'listar', sala: sala } }, null);
+  var r2 = trata({ parameter: {} }, { acao: 'enviar', sala: sala, t: 'teste feito no editor', a: 'professor' });
+  var r3 = trata({ parameter: { acao: 'listar', sala: sala } }, null);
+  var id = r2.ok ? r2.frase.id : (r3.frases[0] ? r3.frases[0].id : '');
+  var r4 = trata({ parameter: {} }, { acao: 'apagar', sala: sala, id: id, senha: SENHA_PROFESSOR });
+  var tudoOk = r1.ok && (r2.ok || /já está/.test(r2.erro || '')) && r3.ok && r4.ok;
+  Logger.log((tudoOk ? 'OK: o servidor está funcionando. ' : 'ALGO FALHOU. ') + JSON.stringify({ listar: r1, enviar: r2, listarDeNovo: r3, apagar: r4 }));
+  return tudoOk;
 }
 
 /* ---------- planilha ---------- */
@@ -71,9 +88,18 @@ function enviar(sala, t, a){
   var lock = LockService.getScriptLock();
   try { lock.waitLock(15000); } catch (x) { return { ok: false, erro: 'Muita gente enviando ao mesmo tempo. Tente de novo.' }; }
   try {
-    var atuais = listar(sala);
-    if (atuais.length >= MAX_POR_SALA) return { ok: false, erro: 'Esta sala já tem frases demais.' };
-    for (var i = 0; i < atuais.length; i++) if (atuais[i].t === f) return { ok: false, erro: 'Essa frase já está na sala.' };
+    var vals = linhas(), atuais = 0, agora = new Date().getTime();
+    for (var i = 0; i < vals.length; i++) {
+      if (String(vals[i][1]) !== sala) continue;
+      atuais++;
+      if (String(vals[i][2]) === f) {
+        // a mesma frase chegou duas vezes em poucos segundos (clique repetido ou reenvio da rede): conta como sucesso
+        var quando = vals[i][4] instanceof Date ? vals[i][4].getTime() : new Date(vals[i][4]).getTime();
+        if (quando && agora - quando < 30000) return { ok: true, frase: { id: String(vals[i][0]), t: f, a: String(vals[i][3] || '') }, repetida: true };
+        return { ok: false, erro: 'Essa frase já está na sala.' };
+      }
+    }
+    if (atuais >= MAX_POR_SALA) return { ok: false, erro: 'Esta sala já tem frases demais.' };
     var id = 'f' + Utilities.getUuid().replace(/-/g, '').slice(0, 12);   // começa com letra para a planilha não virar número
     aba().appendRow([id, sala, f, nome, new Date()]);
     return { ok: true, frase: { id: id, t: f, a: nome } };

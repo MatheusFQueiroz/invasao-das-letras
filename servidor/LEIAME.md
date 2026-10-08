@@ -29,6 +29,10 @@ Salve o arquivo no GitHub (botão do lápis no site do GitHub, depois "Commit ch
 4. Clique em **Implantar**. O Google pede autorização: **Autorizar acesso** > escolha sua conta > se aparecer "O Google não verificou este app", clique em **Avançado** > **Acessar ... (não seguro)** > **Permitir**. É o seu próprio script, só está sem o selo de verificação.
 5. Copie o **URL do app da Web** (termina em `/exec`) e cole em `servidor.js`, como mostrado acima.
 
+**Confira antes de usar com a turma:** no editor, escolha a função `testarNoEditor` na barra de cima (ao lado de "Depurar") e clique em **Executar**. Se o Google pedir autorização, aceite (Revisar permissões > sua conta > Avançado > Acessar > Permitir). O "Registro de execução" deve terminar com `OK: o servidor está funcionando` e a planilha aparece no Drive. Se você rodou isso **depois** de implantar, publique uma nova versão (Implantar > Gerenciar implantações > lápis > Versão: Nova versão > Implantar).
+
+Teste rápido no navegador: abra `SEU_ENDERECO/exec?acao=ping`. A resposta certa é `{"ok":true,"ping":true,...}`. Se aparecer "Sorry, unable to open the file at this time" ou "Page Not Found", o código não está salvo/implantado na versão atual ou a autorização não foi concluída: salve, rode `testarNoEditor` e publique uma nova versão.
+
 Pronto. Na primeira frase enviada, o script cria sozinho a planilha **"Invasão das Letras - frases"** no seu Google Drive, com as colunas id, sala, frase, nome e quando. Apagar uma linha da planilha apaga a frase do jogo.
 
 **Senha para apagar pelo jogo (opcional):** no começo do código há `var SENHA_PROFESSOR = '';`. Se colocar uma senha ali, só quem digitar essa senha no Modo professor consegue apagar frases pelo jogo.

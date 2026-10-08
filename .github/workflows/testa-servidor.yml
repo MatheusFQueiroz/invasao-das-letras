@@ -1,0 +1,58 @@
+# Testa o servidor de frases configurado em servidor.js (listar, enviar, apagar e cabeçalhos de CORS).
+# Roda sozinho quando servidor.js muda e também pela aba Actions > "Run workflow".
+name: Testa o servidor de frases
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - "servidor.js"
+      - ".github/workflows/testa-servidor.yml"
+
+jobs:
+  testar:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Lê o endereço em servidor.js
+        run: |
+          URL=$(grep -o 'var SERVIDOR_FRASES *= *"[^"]*"' servidor.js | sed 's/.*"\([^"]*\)"/\1/')
+          if [ -z "$URL" ]; then echo "::error::servidor.js está sem endereço. Veja servidor/LEIAME.md."; exit 1; fi
+          echo "URL=$URL" >> "$GITHUB_ENV"; echo "Servidor: $URL"
+
+      - name: Listar (GET) e conferir CORS em cada resposta da cadeia de redirecionamento
+        run: |
+          set -e
+          SALA="teste-do-github-$(date +%s)"; echo "SALA=$SALA" >> "$GITHUB_ENV"
+          curl -sS -L -D cabecalhos.txt -o corpo.txt "$URL?acao=listar&sala=$SALA&_=$(date +%s)"
+          echo "--- cabeçalhos ---"; cat cabecalhos.txt; echo "--- corpo ---"; cat corpo.txt; echo
+          grep -q '"ok":true' corpo.txt || { echo "::error::A resposta não é o JSON esperado. Se vier HTML de login, a implantação não está como 'Qualquer pessoa'."; exit 1; }
+          # cada resposta (302 e final) precisa liberar CORS para o navegador seguir o redirecionamento
+          RESPOSTAS=$(grep -c '^HTTP/' cabecalhos.txt); COMCORS=$(grep -ci '^access-control-allow-origin:' cabecalhos.txt)
+          echo "respostas na cadeia: $RESPOSTAS · com Access-Control-Allow-Origin: $COMCORS"
+          if [ "$COMCORS" -lt "$RESPOSTAS" ]; then echo "::warning::Nem toda resposta trouxe Access-Control-Allow-Origin. O navegador pode bloquear a chamada."; fi
+
+      - name: Enviar uma frase de teste (POST text/plain; no 302 o curl troca para GET, como o navegador)
+        run: |
+          set -e
+          FRASE="teste github $(date +%s | tr 0-9 a-j)"; echo "FRASE=$FRASE" >> "$GITHUB_ENV"; echo "frase única: $FRASE"
+          curl -sS -L -D cab2.txt -o corpo2.txt -H 'Content-Type: text/plain;charset=utf-8' --data '{"acao":"enviar","sala":"'"$SALA"'","t":"'"$FRASE"'","a":"robô"}' "$URL?acao=enviar&_=$(date +%s)"
+          echo "--- cabeçalhos ---"; grep -i '^HTTP/\|^access-control\|^content-type' cab2.txt; echo "--- corpo ---"; cat corpo2.txt; echo
+          grep -q '"ok":true' corpo2.txt || { echo "::error::O envio não funcionou: $(cat corpo2.txt | head -c 300)"; exit 1; }
+          ID=$(grep -o '"id":"[^"]*"' corpo2.txt | head -1 | sed 's/"id":"//;s/"//'); echo "ID=$ID" >> "$GITHUB_ENV"; echo "id da frase: $ID"
+
+      - name: Listar de novo (a frase precisa aparecer uma vez só), repetir (precisa recusar) e apagar
+        run: |
+          set -e
+          curl -sS -L -o corpo3.txt "$URL?acao=listar&sala=$SALA&_=$(date +%s)"; cat corpo3.txt; echo
+          N=$(grep -o "$FRASE" corpo3.txt | wc -l); echo "vezes que a frase aparece: $N"
+          [ "$N" -ge 1 ] || { echo "::error::A frase enviada não apareceu na listagem."; exit 1; }
+          [ "$N" -eq 1 ] || echo "::warning::A frase apareceu $N vezes: o servidor gravou mais de uma vez."
+          curl -sS -L -o corpo4.txt -H 'Content-Type: text/plain;charset=utf-8' --data '{"acao":"enviar","sala":"'"$SALA"'","t":"'"$FRASE"'!","a":""}' "$URL?acao=enviar"; cat corpo4.txt; echo
+          grep -q '"ok":false' corpo4.txt || echo "::warning::A frase repetida não foi recusada (pode ser a janela de tolerância a envios duplicados)."
+          curl -sS -L -o corpo5.txt -H 'Content-Type: text/plain;charset=utf-8' --data '{"acao":"apagar","sala":"'"$SALA"'","id":"'"$ID"'","senha":""}' "$URL?acao=apagar"; cat corpo5.txt; echo
+          grep -q '"ok":true' corpo5.txt || { echo "::error::Não consegui apagar a frase de teste."; exit 1; }
+          curl -sS -L -o corpo6.txt "$URL?acao=listar&sala=$SALA&_=$(date +%s)"; cat corpo6.txt; echo
+          grep -q "$FRASE" corpo6.txt && { echo "::error::A frase continua lá depois de apagar."; exit 1; }
+          echo "### Servidor de frases OK: listar, enviar, recusar repetida e apagar funcionaram." >> "$GITHUB_STEP_SUMMARY"
